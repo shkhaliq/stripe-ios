@@ -7,8 +7,7 @@
 
 import Foundation
 
-@_spi(ExperimentalPaymentSheetDecouplingAPI) public extension PaymentSheet {
-    /// 🚧 Under construction
+public extension PaymentSheet {
     /// Contains information needed to render PaymentSheet
     /// The values are used to calculate the payment methods displayed and influence the UI.
     /// - Note: The PaymentIntent or SetupIntent you create on your server must have the same values or the payment/setup will fail.
@@ -114,6 +113,34 @@ import Foundation
                 /// - Seealso: https://stripe.com/docs/api/setup_intents/create#create_setup_intent-usage
                 setupFutureUsage: SetupFutureUsage = .offSession
             )
+        }
+
+        /// An async version of `ConfirmHandler`.
+        typealias AsyncConfirmHandler = (
+            _ paymentMethod: STPPaymentMethod,
+            _ shouldSavePaymentMethod: Bool
+        ) async throws -> String
+
+        /// An async version of the initializer. See the other initializer for documentation.
+        init(
+            mode: Mode,
+            paymentMethodTypes: [String]? = nil,
+            onBehalfOf: String? = nil,
+            confirmHandler2: @escaping AsyncConfirmHandler
+        ) {
+            self.mode = mode
+            self.paymentMethodTypes = paymentMethodTypes
+            self.onBehalfOf = onBehalfOf
+            self.confirmHandler = { paymentMethod, shouldSavePaymentMethod, callback in
+                Task {
+                    do {
+                        let clientSecret = try await confirmHandler2(paymentMethod, shouldSavePaymentMethod)
+                        callback(.success(clientSecret))
+                    } catch {
+                        callback(.failure(error))
+                    }
+                }
+            }
         }
     }
 }

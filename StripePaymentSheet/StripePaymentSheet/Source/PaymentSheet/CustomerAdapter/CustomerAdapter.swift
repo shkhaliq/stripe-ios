@@ -135,14 +135,14 @@ import UIKit
         let customerEphemeralKey = try await customerEphemeralKey
         return try await withCheckedThrowingContinuation({ continuation in
             // List the Customer's saved PaymentMethods
-            let savedPaymentMethodTypes: [STPPaymentMethodType] = [.card]  // hardcoded for now
+            let savedPaymentMethodTypes: [STPPaymentMethodType] = [.card] // hardcoded for now
             apiClient.listPaymentMethods(
                 forCustomer: customerEphemeralKey.id,
                 using: customerEphemeralKey.ephemeralKeySecret,
                 types: savedPaymentMethodTypes
             ) { paymentMethods, error in
                 guard let paymentMethods = paymentMethods, error == nil else {
-                    let error = error ?? PaymentSheetError.unknown(debugDescription: "Unexpected response from Stripe API.") // TODO: make a better default error
+                    let error = error ?? PaymentSheetError.unexpectedResponseFromStripeAPI // TODO: make a better default error
                     continuation.resume(throwing: error)
                     return
                 }
@@ -191,7 +191,7 @@ import UIKit
 
     open func setupIntentClientSecretForCustomerAttach() async throws -> String {
         guard let setupIntentClientSecretProvider = setupIntentClientSecretProvider else {
-            throw PaymentSheetError.unknown(debugDescription: "setupIntentClientSecretForCustomerAttach, but setupIntentClientSecretProvider is nil") // TODO: This is a programming error, setupIntentClientSecretForCustomerAttach should not be called if canCreateSetupIntents is false
+            throw PaymentSheetError.setupIntentClientSecretProviderNil // TODO: This is a programming error, setupIntentClientSecretForCustomerAttach should not be called if canCreateSetupIntents is false
         }
         return try await setupIntentClientSecretProvider()
     }

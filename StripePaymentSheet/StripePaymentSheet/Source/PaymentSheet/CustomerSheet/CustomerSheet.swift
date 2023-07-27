@@ -68,17 +68,21 @@ internal enum InternalCustomerSheetResult {
 
     var customerAdapter: CustomerAdapter
 
+    private var csCompletion: CustomerSheetCompletion?
+
     /// The result of the CustomerSheet
     @frozen public enum CustomerSheetResult {
         /// The customer cancelled the sheet. (e.g. by tapping outside it or tapping the "X")
-        case canceled
-        /// The customer selected a payment method.
+        /// The associated value is the original payment method, before the sheet was opened, as long
+        /// that payment method is still available.
+        case canceled(PaymentOptionSelection?)
+
+        /// The customer selected a payment method. The associated value is the selected payment method.
         case selected(PaymentOptionSelection?)
+
         /// An error occurred when presenting the sheet
         case error(Error)
     }
-
-    private var csCompletion: CustomerSheetCompletion?
 
     @available(iOSApplicationExtension, unavailable)
     @available(macCatalystApplicationExtension, unavailable)
@@ -110,8 +114,11 @@ internal enum InternalCustomerSheetResult {
         }
         loadPaymentMethodInfo { result in
             switch result {
-            case .success((let savedPaymentMethods, let selectedPaymentMethodOption)):
-                self.present(from: presentingViewController, savedPaymentMethods: savedPaymentMethods, selectedPaymentMethodOption: selectedPaymentMethodOption)
+            case .success((let savedPaymentMethods, let selectedPaymentMethodOption, let merchantSupportedPaymentMethodTypes)):
+                self.present(from: presentingViewController,
+                             savedPaymentMethods: savedPaymentMethods,
+                             selectedPaymentMethodOption: selectedPaymentMethodOption,
+                             merchantSupportedPaymentMethodTypes: merchantSupportedPaymentMethodTypes)
             case .failure(let error):
                 csCompletion(.error(CustomerSheetError.errorFetchingSavedPaymentMethods(error)))
                 DispatchQueue.main.async {
@@ -127,7 +134,8 @@ internal enum InternalCustomerSheetResult {
     @available(macCatalystApplicationExtension, unavailable)
     func present(from presentingViewController: UIViewController,
                  savedPaymentMethods: [STPPaymentMethod],
-                 selectedPaymentMethodOption: CustomerPaymentOption?) {
+                 selectedPaymentMethodOption: CustomerPaymentOption?,
+                 merchantSupportedPaymentMethodTypes: [STPPaymentMethodType]) {
         let loadSpecsPromise = Promise<Void>()
         AddressSpecProvider.shared.loadAddressSpecs {
             loadSpecsPromise.resolve(with: ())
@@ -138,6 +146,7 @@ internal enum InternalCustomerSheetResult {
                 let isApplePayEnabled = StripeAPI.deviceSupportsApplePay() && self.configuration.applePayEnabled
                 let savedPaymentSheetVC = CustomerSavedPaymentMethodsViewController(savedPaymentMethods: savedPaymentMethods,
                                                                                     selectedPaymentMethodOption: selectedPaymentMethodOption,
+                                                                                    merchantSupportedPaymentMethodTypes: merchantSupportedPaymentMethodTypes,
                                                                                     configuration: self.configuration,
                                                                                     customerAdapter: self.customerAdapter,
                                                                                     isApplePayEnabled: isApplePayEnabled,
@@ -149,23 +158,32 @@ internal enum InternalCustomerSheetResult {
     }
     // MARK: - Internal Properties
     var completion: (() -> Void)?
-    var userCompletion: ((CustomerSheetResult) -> Void)?
+    var userCompletion: ((Result<PaymentOptionSelection?, Error>) -> Void)?
 }
 
 @available(iOSApplicationExtension, unavailable)
 @available(macCatalystApplicationExtension, unavailable)
 extension CustomerSheet {
-    func loadPaymentMethodInfo(completion: @escaping (Result<([STPPaymentMethod], CustomerPaymentOption?), Error>) -> Void) {
+    func loadPaymentMethodInfo(completion: @escaping (Result<([STPPaymentMethod], CustomerPaymentOption?, [STPPaymentMethodType]), Error>) -> Void) {
         Task {
             do {
                 async let paymentMethodsResult = try customerAdapter.fetchPaymentMethods()
                 async let selectedPaymentMethodResult = try self.customerAdapter.fetchSelectedPaymentOption()
-                let (paymentMethods, selectedPaymentMethod) = try await (paymentMethodsResult, selectedPaymentMethodResult)
-                completion(.success((paymentMethods, selectedPaymentMethod)))
+                async let merchantSupportedPaymentMethodTypes = try self.retrieveMerchantSupportedPaymentMethodTypes()
+                let (paymentMethods, selectedPaymentMethod, elementSesssion) = try await (paymentMethodsResult, selectedPaymentMethodResult, merchantSupportedPaymentMethodTypes)
+                completion(.success((paymentMethods, selectedPaymentMethod, elementSesssion)))
             } catch {
                 completion(.failure(error))
             }
         }
+    }
+
+    func retrieveMerchantSupportedPaymentMethodTypes() async throws -> [STPPaymentMethodType] {
+        guard customerAdapter.canCreateSetupIntents else {
+            return [.card]
+        }
+        let elementSession = try await configuration.apiClient.retrieveElementsSessionForCustomerSheet()
+        return elementSession.orderedPaymentMethodTypes
     }
 }
 
@@ -225,7 +243,7 @@ extension CustomerSheet: LoadingViewControllerDelegate {
             guard let matchingPaymentMethod = paymentMethods.first(where: { $0.stripeId == paymentMethodId }) else {
                 return nil
             }
-            return CustomerSheet.PaymentOptionSelection.savedPaymentMethod(matchingPaymentMethod)
+            return CustomerSheet.PaymentOptionSelection.paymentMethod(matchingPaymentMethod)
         default:
             return nil
         }

@@ -1,4 +1,44 @@
-## x.x.x x-x-x
+### Identity
+* [ADDED][2452](https://github.com/stripe/stripe-ios/pull/2452) Supports [phone verification](https://stripe.com/docs/identity/phone) in Identity mobile SDK.
+
+## 23.11.2 2023-07-24
+### PaymentSheet
+* [Fixed] Update stp_icon_add@3x.png to 8bit color depth (Thanks @jszumski)
+* [Added] Enable SEPA Debit for SetupIntents and PaymentIntents with setup_future_usage. Note: PaymentSheet doesn't display saved SEPA Debit payment methods yet.
+
+### CustomerSheet
+* [Fixed] Ability to removing payment method immediately after adding it.
+* [Fixed] Re-init addPaymentMethodViewController after adding payment method to allow for adding another payment method
+
+## 23.11.1 2023-07-18
+### PaymentSheet
+* [Fixed] Fixed various bugs in Link private beta.
+
+## 23.11.0 2023-07-17
+### CustomerSheet
+* [Changed] Breaking interface change for `CustomerSheetResult`. `CustomerSheetResult.canceled` now has a nullable associated value signifying that there is no selected payment method. Please use both `.canceled(StripeOptionSelection?)` and `.selected(PaymentOptionSelection?)` to update your UI to show the latest selected payment method.
+
+## 23.10.0 2023-07-10
+### Payments
+* [Fixed] A bug where `mandate_data` was not being properly attached to PayPal SetupIntent's.
+### PaymentSheet
+* [Added] You can now collect payment details before creating a PaymentIntent or SetupIntent. See [our docs](https://stripe.com/docs/payments/accept-a-payment-deferred) for more info. This integration also allows you to [confirm the Intent on the server](https://stripe.com/docs/payments/finalize-payments-on-the-server).
+
+## 23.9.4 2023-07-05
+### PaymentSheet
+* [Added] US bank accounts are now supported when initializing with an IntentConfiguration.
+
+## 23.9.3 2023-06-26
+### PaymentSheet
+* [Fixed] Affirm no longer requires shipping details.
+
+### CustomerSheet
+* [Added] Added `billingDetailsCollectionConfiguration` to configure how you want to collect billing details (private beta).
+
+## 23.9.2 2023-06-20
+### Payments
+* [Fixed] Fixed a bug causing Cash App Pay SetupIntents to incorrectly state they were canceled when they succeeded.
+
 ### AddressElement
 * [Fixed] A bug that was causing `addressViewControllerDidFinish` to return a non-nil `AddressDetails` when the user cancels out of the AddressElement when default values are provided.
 * [Fixed] A bug that prevented the auto complete view from being presented when the AddressElement was created with default values.

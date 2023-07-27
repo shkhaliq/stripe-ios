@@ -12,7 +12,7 @@
 import Combine
 import Contacts
 import PassKit
-@_spi(STP) @_spi(ExperimentalPaymentSheetDecouplingAPI) @_spi(PaymentSheetSkipConfirmation) import StripePaymentSheet
+@_spi(STP) @_spi(PaymentSheetSkipConfirmation) import StripePaymentSheet
 import SwiftUI
 import UIKit
 
@@ -214,7 +214,6 @@ class PlaygroundController: ObservableObject {
     init(settings: PaymentSheetTestPlaygroundSettings) {
         // Enable experimental payment methods.
         //        PaymentSheet.supportedPaymentMethods += [.link]
-        PaymentSheet.enableACHV2InDeferredFlow = true // TODO(https://jira.corp.stripe.com/browse/BANKCON-6731) Remove this.
 
         // Hack to ensure we don't force the native flow unless we're in a UI test
         if ProcessInfo.processInfo.environment["UITesting"] == nil {
@@ -266,6 +265,7 @@ class PlaygroundController: ObservableObject {
 
     func didTapResetConfig() {
         self.settings = PaymentSheetTestPlaygroundSettings.defaultValues()
+        PaymentSheet.resetCustomer()
     }
 
     func appearanceButtonTapped() {

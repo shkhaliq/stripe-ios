@@ -66,7 +66,7 @@ For help with Apple's App Privacy Details form in App Store Connect, visit [Stri
 |Module|Description|Compressed|Uncompressed|
 |------|-----------|----------|------------|
 |StripePaymentSheet|Stripe's [prebuilt payment UI](https://stripe.com/docs/payments/accept-a-payment?platform=ios&ui=payment-sheet).|2.7MB|6.3MB|
-|Stripe|Contains all the below frameworks, plus [Issuing](https://stripe.com/docs/issuing/cards/digital-wallets?platform=iOS) and [Basic Integration](/docs/mobile/ios/basic).|2.3MB|5.1MB|
+|Stripe|Contains all the below frameworks, plus [Issuing](https://stripe.com/docs/issuing/cards/digital-wallets?platform=iOS) and [Basic Integration](https://stripe.com/docs/mobile/ios/basic).|2.3MB|5.1MB|
 |StripeApplePay|[Apple Pay support](/docs/apple-pay), including `STPApplePayContext`.|0.4MB|1.0MB|
 |StripePayments|Bindings for the Stripe Payments API.|1.0MB|2.6MB|
 |StripePaymentsUI|Bindings for the Stripe Payments API, [STPPaymentCardTextField](https://stripe.com/docs/payments/accept-a-payment?platform=ios&ui=custom), STPCardFormView, and other UI elements.|1.7MB|3.9MB|
@@ -122,7 +122,7 @@ We use [Tuist](https://tuist.io) to generate Xcode projects, and all Xcode relat
 If you want to build from the master branch you need to follow these steps:
 
 - Clone the repository and `cd` into its directory.
-- Install Tuist by running `curl -Ls https://install.tuist.io | bash`
+- Install Tuist by following the instructions at [tuist.io](https://docs.tuist.io/tutorial/get-started/).
 - Run `tuist generate`, optionally pass the `-n` option if you don't want to open Xcode automatically.
 
 You can build any of the generated targets as you normally would.

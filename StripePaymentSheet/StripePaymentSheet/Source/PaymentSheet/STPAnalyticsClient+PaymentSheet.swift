@@ -17,8 +17,8 @@ extension STPAnalyticsClient {
         isCustom: Bool = false, configuration: PaymentSheet.Configuration, intentConfig: PaymentSheet.IntentConfiguration?
     ) {
         logPaymentSheetEvent(event: paymentSheetInitEventValue(
-                                isCustom: isCustom,
-                                configuration: configuration),
+                             isCustom: isCustom,
+                             configuration: configuration),
                              configuration: configuration,
                              intentConfig: intentConfig)
     }
@@ -29,8 +29,10 @@ extension STPAnalyticsClient {
         result: PaymentSheetResult,
         linkEnabled: Bool,
         activeLinkSession: Bool,
+        linkSessionType: LinkSettings.PopupWebviewOption?,
         currency: String?,
-        intentConfig: PaymentSheet.IntentConfiguration? = nil
+        intentConfig: PaymentSheet.IntentConfiguration? = nil,
+        deferredIntentConfirmationType: DeferredIntentConfirmationType?
     ) {
         var success = false
         switch result {
@@ -52,8 +54,10 @@ extension STPAnalyticsClient {
             duration: AnalyticsHelper.shared.getDuration(for: .checkout),
             linkEnabled: linkEnabled,
             activeLinkSession: activeLinkSession,
+            linkSessionType: linkSessionType,
             currency: currency,
-            intentConfig: intentConfig
+            intentConfig: intentConfig,
+            deferredIntentConfirmationType: deferredIntentConfirmationType
         )
     }
 
@@ -81,9 +85,15 @@ extension STPAnalyticsClient {
         intentConfig: PaymentSheet.IntentConfiguration? = nil
     ) {
         logPaymentSheetEvent(event: paymentSheetPaymentOptionSelectEventValue(
-                                isCustom: isCustom,
-                                paymentMethod: paymentMethod),
+                             isCustom: isCustom,
+                             paymentMethod: paymentMethod),
                              intentConfig: intentConfig)
+    }
+
+    enum DeferredIntentConfirmationType: String {
+        case server = "server"
+        case client = "client"
+        case none = "none"
     }
 
     // MARK: - String builders
@@ -225,9 +235,12 @@ extension STPAnalyticsClient {
         duration: TimeInterval? = nil,
         linkEnabled: Bool? = nil,
         activeLinkSession: Bool? = nil,
+        linkSessionType: LinkSettings.PopupWebviewOption? = nil,
         configuration: PaymentSheet.Configuration? = nil,
         currency: String? = nil,
         intentConfig: PaymentSheet.IntentConfiguration? = nil,
+        error: Error? = nil,
+        deferredIntentConfirmationType: DeferredIntentConfirmationType? = nil,
         params: [String: Any] = [:]
     ) {
         var additionalParams = [:] as [String: Any]
@@ -238,11 +251,19 @@ extension STPAnalyticsClient {
         additionalParams["duration"] = duration
         additionalParams["link_enabled"] = linkEnabled
         additionalParams["active_link_session"] = activeLinkSession
+        if let linkSessionType = linkSessionType {
+            additionalParams["link_session_type"] = linkSessionType.rawValue
+        }
         additionalParams["session_id"] = AnalyticsHelper.shared.sessionID
         additionalParams["mpe_config"] = configuration?.analyticPayload
         additionalParams["locale"] = Locale.autoupdatingCurrent.identifier
         additionalParams["currency"] = currency
         additionalParams["is_decoupled"] = intentConfig != nil
+        additionalParams["error_domain"] = (error as? NSError)?.domain
+        additionalParams["deferred_intent_confirmation_type"] = deferredIntentConfirmationType?.rawValue
+        if let error = error as? PaymentSheetError {
+            additionalParams["error_message"] = error.safeLoggingString
+        }
 
         for (param, param_value) in params {
             additionalParams[param] = param_value
